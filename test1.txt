@@ -1,0 +1,78 @@
+import okhttp3.*;
+import javax.net.ssl.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+
+public class OkHttpExample {
+    public static void main(String[] args) throws Exception {
+        String proxyHost = "proxy.example.com";
+        int proxyPort = 8080;
+        String proxyUser = "proxyUser";
+        String proxyPassword = "proxyPassword";
+        String apiUrl = "https://api.example.com/data";
+        String jsonBody = "{\"key\": \"value\"}";
+
+        // Create a proxy authenticator
+        Authenticator proxyAuthenticator = new Authenticator() {
+            @Override
+            public Request authenticate(Route route, Response response) throws IOException {
+                String credential = Credentials.basic(proxyUser, proxyPassword);
+                return response.request().newBuilder()
+                        .header("Proxy-Authorization", credential)
+                        .build();
+            }
+        };
+
+        // Create a trust manager that does not validate certificate chains
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                }
+
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            }
+        };
+
+        // Install the all-trusting trust manager
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+        SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+        // Configure the OkHttpClient to use the proxy, authenticator, and relaxed SSL validation
+        OkHttpClient client = new OkHttpClient.Builder()
+                .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort)))
+                .proxyAuthenticator(proxyAuthenticator)
+                .sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
+                .hostnameVerifier(new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                })
+                .build();
+
+        // Create the request
+        Request request = new Request.Builder()
+                .url(apiUrl)
+                .post(RequestBody.create(jsonBody, MediaType.parse("application/json; charset=utf-8")))
+                .build();
+
+        // Execute the request
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+
+            // Print the response
+            System.out.println("Response code: " + response.code());
+            System.out.println("Response body: " + response.body().string());
+        }
+    }
+}
