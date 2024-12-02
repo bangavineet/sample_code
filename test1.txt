@@ -1,25 +1,3 @@
-import java.io.BufferedInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+//div[(@data-automationid='DetailsRow') and contains(@aria-label, 'text')]//i[(@data-icon-name='CircleRing')]
 
-public class FileDownloader {
-    public static void main(String[] args) {
-        String fileURL = "https://your-sharepoint-site.com/path/to/your/file";
-        String saveDir = "path/to/download/directory";
-        String saveFilePath = saveDir + "/downloadedFile.ext";
-
-        try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(saveFilePath)) {
-            byte[] dataBuffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
-            System.out.println("File downloaded successfully to " + saveFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
+//button[@name='Download']
