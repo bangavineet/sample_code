@@ -1,44 +1,25 @@
-// Create a custom CookieJar to store cookies
-        CookieJar cookieJar = new CookieJar() {
-            private List<Cookie> cookies = new ArrayList<>();
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-            @Override
-            public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-                this.cookies.addAll(cookies);
+public class FileDownloader {
+    public static void main(String[] args) {
+        String fileURL = "https://your-sharepoint-site.com/path/to/your/file";
+        String saveDir = "path/to/download/directory";
+        String saveFilePath = saveDir + "/downloadedFile.ext";
+
+        try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(saveFilePath)) {
+            byte[] dataBuffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
-
-            @Override
-            public List<Cookie> loadForRequest(HttpUrl url) {
-                return cookies;
-            }
-        };
-
-        // Configure the OkHttpClient to use the proxy, authenticator, and relaxed SSL validation
-        OkHttpClient client = new OkHttpClient.Builder()
-                .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort)))
-                .proxyAuthenticator(proxyAuthenticator)
-                .sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
-                .hostnameVerifier((hostname, session) -> true)
-                .cookieJar(cookieJar)
-                .build();
-
-        // Create the request
-        Request request = new Request.Builder()
-                .url(apiUrl)
-                .post(RequestBody.create(jsonBody, MediaType.parse("application/json; charset=utf-8")))
-                .build();
-
-        // Execute the request
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-
-            // Print the response
-            System.out.println("Response code: " + response.code());
-            System.out.println("Response body: " + response.body().string());
-
-            // Print the cookies
-            List<Cookie> cookies = cookieJar.loadForRequest(request.url());
-            for (Cookie cookie : cookies) {
-                System.out.println("Cookie: " + cookie.toString());
-            }
+            System.out.println("File downloaded successfully to " + saveFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+}
